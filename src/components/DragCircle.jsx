@@ -8,9 +8,10 @@ export function createDragCircle(app) {
   circle.x = app.screen.width / 2
   circle.y = app.screen.height / 2
 
-  const text = new PIXI.Text('Drag Me', {
+  const text = new PIXI.Text('Drag', {
     fontFamily: 'Arial',
-    fontSize: 12,
+    fontSize: 16,
+    fontWeight: 'bold',
     fill: 0x00008B,
     align: 'center',
   })
