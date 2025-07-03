@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js'
 
-export function createDragCircle(app) {
+export function createDragCircle(app, getRectangle, modifyRectangle) {
   const circle = new PIXI.Graphics()
   circle.beginFill(0x00ffff)
   circle.drawCircle(0, 0, 25)
@@ -8,17 +8,27 @@ export function createDragCircle(app) {
   circle.x = app.screen.width / 2
   circle.y = app.screen.height / 2
 
-  const text = new PIXI.Text('Drag', {
+  const dragText = new PIXI.Text('Drag', {
     fontFamily: 'Arial',
     fontSize: 16,
     fontWeight: 'bold',
     fill: 0x00008B,
     align: 'center',
   })
-  text.anchor.set(0.5)
-  text.x = 0
-  text.y = 0
-  circle.addChild(text)
+  dragText.anchor.set(0.5)
+  dragText.x = 0
+  dragText.y = 0
+  circle.addChild(dragText)
+
+  const dragEndText = new PIXI.Text('Drag End. WELL DONE!', {
+    fontFamily: 'Arial',
+    fontSize: 24,
+    fontWeight: 'bold',
+    fill: 0xffffff,
+    align: 'left',
+    wordWrap: true,
+    wordWrapWidth: 50,
+  })
 
   circle.eventMode = 'dynamic'
   circle.cursor = 'pointer'
@@ -30,6 +40,65 @@ export function createDragCircle(app) {
   
   let dragging = false
   let dragOffset = null
+
+  // Function to check if circle is inside rectangle
+  function isCircleInRectangle(circle, rectangle) {
+    if (!rectangle) return false
+    
+    const circleBounds = {
+      left: circle.x - 25, // circle radius
+      right: circle.x + 25,
+      top: circle.y - 25,
+      bottom: circle.y + 25
+    }
+    
+    const rectBounds = {
+      left: rectangle.x,
+      right: rectangle.x + 100, // rectangle width
+      top: rectangle.y,
+      bottom: rectangle.y + 200 // rectangle height
+    }
+    
+    return circleBounds.left < rectBounds.right &&
+           circleBounds.right > rectBounds.left &&
+           circleBounds.top < rectBounds.bottom &&
+           circleBounds.bottom > rectBounds.top
+  }
+
+  function handleSuccess() {
+    // Modify the rectangle - change to darker color
+    if (modifyRectangle) {
+      modifyRectangle((rect) => {
+        rect.clear()
+        rect.beginFill(0x333333)
+        rect.drawRect(0, 0, 100, 200)
+        rect.endFill()
+        rect.addChild(dragEndText)
+      })
+    }
+
+    const button = new PIXI.Text('Restart', {
+      fontFamily: 'Arial',
+      fontSize: 24,
+      fontWeight: 'bold',
+      fill: 0xffffff,
+      align: 'center',
+    })
+    button.anchor.set(0.5)
+    button.x = app.screen.width / 2
+    button.y = app.screen.height / 2 + 100
+    button.eventMode = 'dynamic' // Make it interactive
+    button.cursor = 'pointer'
+    
+    button.on('pointerdown', handleDragEnd)
+    app.stage.addChild(button)
+  }
+
+  function handleDragEnd(){
+    console.log('bye');
+    
+    window.location.reload();
+  }
   
   circle.on('pointerdown', (event)=>{
     dragOffset = {
@@ -40,11 +109,23 @@ export function createDragCircle(app) {
   })
   
   circle.on('pointerup', () => {
+    // Check collision when circle is dropped
+    const rectangle = getRectangle ? getRectangle() : null
+    if (isCircleInRectangle(circle, rectangle)) {
+      handleSuccess()
+    }
+    
     dragging = false
     dragOffset = null
   })
   
   circle.on('pointerupoutside', () => {
+    // Check collision when circle is dropped outside
+    const rectangle = getRectangle ? getRectangle() : null
+    if (isCircleInRectangle(circle, rectangle)) {
+      handleSuccess()
+    }
+    
     dragging = false
     dragOffset = null
   })
