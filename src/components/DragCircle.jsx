@@ -3,13 +3,27 @@ import * as PIXI from 'pixi.js'
 export function createDragCircle(app) {
   const circle = new PIXI.Graphics()
   circle.beginFill(0xffffff)
-  circle.drawCircle(0, 0, 20)
+  circle.drawCircle(0, 0, 25)
   circle.endFill()
   circle.x = app.screen.width / 2
   circle.y = app.screen.height / 2
 
+  const text = new PIXI.Text('Drag Me', {
+    fontFamily: 'Arial',
+    fontSize: 12,
+    fill: 0x000000,
+    align: 'center',
+  })
+  text.anchor.set(0.5)
+  text.x = 0
+  text.y = 0
+  circle.addChild(text)
+
   circle.eventMode = 'dynamic'
   circle.cursor = 'pointer'
+
+  const trailContainer = new PIXI.Container()
+  const trailPoints = []
   
   let dragging = false
   let dragOffset = null
@@ -37,8 +51,36 @@ export function createDragCircle(app) {
     if (dragging) {
       circle.x = event.global.x - dragOffset.x
       circle.y = event.global.y - dragOffset.y
+
+            // 添加轨迹点 - 增加采样密度
+            const lastPoint = trailPoints[trailPoints.length - 1]
+            if (!lastPoint || 
+                Math.abs(lastPoint.x - circle.x) > 2 || 
+                Math.abs(lastPoint.y - circle.y) > 2) {
+              trailPoints.push({ x: circle.x, y: circle.y })
+              if (trailPoints.length > 100) {
+                trailPoints.shift()
+              }
+            }
+
+
+      trailContainer.removeChildren()
+      const trail = new PIXI.Graphics()
+      trail.lineStyle(2, 0x00ff00, 0.5)
+      if (trailPoints.length > 1) {
+        for (let i = 0; i < trailPoints.length - 1; i++) {
+            const trail = new PIXI.Graphics()
+            const alpha = (i + 1) / trailPoints.length
+            trail.lineStyle(50, 0x00ffff, alpha * 0.6)
+            trail.moveTo(trailPoints[i].x, trailPoints[i].y)
+            trail.lineTo(trailPoints[i + 1].x, trailPoints[i + 1].y)
+            trailContainer.addChild(trail)
+          }
+      }
     }
   })
+
+  app.stage.addChild(trailContainer)
 
   return circle
 }
