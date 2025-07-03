@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js'
 
 export function createDragCircle(app) {
   const circle = new PIXI.Graphics()
-  circle.beginFill(0xffffff)
+  circle.beginFill(0x00ffff)
   circle.drawCircle(0, 0, 25)
   circle.endFill()
   circle.x = app.screen.width / 2
@@ -11,7 +11,7 @@ export function createDragCircle(app) {
   const text = new PIXI.Text('Drag Me', {
     fontFamily: 'Arial',
     fontSize: 12,
-    fill: 0x000000,
+    fill: 0x00008B,
     align: 'center',
   })
   text.anchor.set(0.5)
@@ -24,6 +24,8 @@ export function createDragCircle(app) {
 
   const trailContainer = new PIXI.Container()
   const trailPoints = []
+  const particles = []
+  const MAX_PARTICLES = 1000 // 最大粒子数限制
   
   let dragging = false
   let dragOffset = null
@@ -51,20 +53,37 @@ export function createDragCircle(app) {
     if (dragging) {
       circle.x = event.global.x - dragOffset.x
       circle.y = event.global.y - dragOffset.y
-
-            // 添加轨迹点 - 增加采样密度
-            const lastPoint = trailPoints[trailPoints.length - 1]
-            if (!lastPoint || 
-                Math.abs(lastPoint.x - circle.x) > 2 || 
-                Math.abs(lastPoint.y - circle.y) > 2) {
-              trailPoints.push({ x: circle.x, y: circle.y })
-              if (trailPoints.length > 100) {
-                trailPoints.shift()
-              }
+      
+    //拖拽时生成粒子
+    if(particles.length < MAX_PARTICLES){
+        for (let i = 0; i < 2; i++) {
+            const particle = new PIXI.Text('●', {
+                fontSize: Math.random() * 10 + 10,
+                fill: `hsl(${Math.random() * 360}, 70%, 60%)`,
+            })
+            particle.anchor.set(0.5)
+            particle.x = circle.x + (Math.random() - 0.5) * 30
+            particle.y = circle.y + (Math.random() - 0.5) * 30
+            particle.alpha = 1
+            particle.vx = (Math.random() - 0.5) * 3
+            particle.vy = (Math.random() - 0.5) * 3
+            particle.life = 60
+            particles.push(particle)
+            app.stage.addChild(particle)
             }
+    }
 
-
-      trailContainer.removeChildren()
+    // 添加轨迹点 - 增加采样密度
+    const lastPoint = trailPoints[trailPoints.length - 1]
+    if (!lastPoint || 
+        Math.abs(lastPoint.x - circle.x) > 2 || 
+        Math.abs(lastPoint.y - circle.y) > 2) {
+        trailPoints.push({ x: circle.x, y: circle.y })
+        if (trailPoints.length > 100) {
+        trailPoints.shift()
+        }
+    }
+    trailContainer.removeChildren()
       const trail = new PIXI.Graphics()
       trail.lineStyle(2, 0x00ff00, 0.5)
       if (trailPoints.length > 1) {
@@ -80,6 +99,21 @@ export function createDragCircle(app) {
     }
   })
 
+  app.ticker.add(() => {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const particle = particles[i]
+      particle.x += particle.vx
+      particle.y += particle.vy
+      particle.alpha -= 1 / 60
+      particle.life--
+      
+      if (particle.life <= 0 || particle.alpha <= 0) {
+        app.stage.removeChild(particle)
+        particle.destroy()
+        particles.splice(i, 1)
+      }
+    }
+  })
   app.stage.addChild(trailContainer)
 
   return circle

@@ -27,7 +27,6 @@ function App() {
 
     updateGrid()
     window.addEventListener('resize', updateGrid)
-    
     return ()=>{
       window.removeEventListener('resize', updateGrid)
       app.destroy(true)
