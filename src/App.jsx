@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import * as PIXI from 'pixi.js'
 import './App.css'
+import { createGrid } from './components/Grid'
+import { createDragCircle } from './components/DragCircle'
 
 function App() {
   const canvasRef = useRef(null)
@@ -17,31 +19,17 @@ function App() {
       canvasRef.current.appendChild(app.view)
     }
 
-    const grid = new PIXI.Graphics();
-
-    grid.lineStyle(1, 0x555555)
-    for (let x = 0; x <= window.innerWidth; x += 10) {
-      grid.moveTo(x, 0)
-      grid.lineTo(x, window.innerHeight)
-    }
-    for (let y = 0; y <= window.innerHeight; y += 10) {
-      grid.moveTo(0, y)
-      grid.lineTo(window.innerWidth, y)
+    function updateGrid() {
+      app.stage.removeChildren()
+      app.stage.addChild(createGrid(app))
+      app.stage.addChild(createDragCircle(app))
     }
 
-    grid.lineStyle(2, 0x777777)
-    for (let x = 0; x <= window.innerWidth; x += 100) {
-      grid.moveTo(x, 0)
-      grid.lineTo(x, window.innerHeight)
-    }
-    for (let y = 0; y <= window.innerHeight; y += 100) {
-      grid.moveTo(0, y)
-      grid.lineTo(window.innerWidth, y)
-    }
-
-    app.stage.addChild(grid)
+    updateGrid()
+    window.addEventListener('resize', updateGrid)
     
     return ()=>{
+      window.removeEventListener('resize', updateGrid)
       app.destroy(true)
     }
   },[])
